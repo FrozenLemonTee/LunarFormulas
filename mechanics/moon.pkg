@@ -1,0 +1,16 @@
+// Mechanics formula package built on LunarUnits quantities and units.
+import {
+  "FrozenLemonTee/LunarFormulas/common",
+  "FrozenLemonTee/LunarUnits/core/dimension",
+  "FrozenLemonTee/LunarUnits/units/angle",
+  "FrozenLemonTee/LunarUnits/units/mechanics" @mechanical_units,
+}
+
+import {
+  "FrozenLemonTee/LunarUnits/quantities/qgeometry",
+  "FrozenLemonTee/LunarUnits/quantities/qmechanics",
+  "FrozenLemonTee/LunarUnits/quantities/qangle",
+  "FrozenLemonTee/LunarUnits/core/quantity",
+  "FrozenLemonTee/LunarUnits/units/si",
+  "FrozenLemonTee/LunarUnits/units/mechanics" @mechanical_units,
+} for "test"

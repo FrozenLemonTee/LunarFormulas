@@ -1,0 +1,30 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "FrozenLemonTee/LunarFormulas/mechanics"
+
+import {
+  "FrozenLemonTee/LunarFormulas/common",
+}
+
+// Values
+pub let force_formula : @common.Formula
+
+pub fn formulas() -> Array[@common.Formula]
+
+pub let kinetic_energy_formula : @common.Formula
+
+pub let power_formula : @common.Formula
+
+pub let rotational_work_formula : @common.Formula
+
+pub let torque_formula : @common.Formula
+
+pub let work_formula : @common.Formula
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+
