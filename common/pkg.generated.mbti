@@ -1,0 +1,105 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "FrozenLemonTee/LunarFormulas/common"
+
+import {
+  "FrozenLemonTee/LunarUnits/core/dimension",
+  "FrozenLemonTee/LunarUnits/core/quantity",
+  "FrozenLemonTee/LunarUnits/core/unit",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn constant(Double) -> FormulaTerm
+
+pub fn input(String, @dimension.Dimension, String) -> FormulaTerm
+
+pub fn quantity(Double, @unit.Un) -> FormulaTerm
+
+// Errors
+pub suberror FormulaBuildError {
+  InputDimensionConflict((String, @dimension.Dimension, @dimension.Dimension))
+} derive(Eq, @debug.Debug)
+pub impl Show for FormulaBuildError
+
+pub suberror FormulaError {
+  MissingInput(String)
+  InputDimensionMismatch((String, @dimension.Dimension, @dimension.Dimension))
+  ExpressionDimensionMismatch((@dimension.Dimension, @dimension.Dimension))
+  OutputDimensionMismatch((@dimension.Dimension, @dimension.Dimension))
+} derive(Eq, @debug.Debug)
+pub impl Show for FormulaError
+
+// Types and methods
+pub struct Formula {
+  name : String
+  inputs : Array[FormulaInput]
+  output : @dimension.Dimension
+  expr : FormulaExpr
+  display : String
+  description : String
+} derive(Eq, @debug.Debug)
+pub fn Formula::checked_eval(Self, FormulaEnv) -> @quantity.Quantity?
+pub fn Formula::checked_from_term(String, FormulaTerm, @dimension.Dimension, String, String) -> Self raise FormulaBuildError
+pub fn Formula::description(Self) -> String
+pub fn Formula::display(Self) -> String
+pub fn Formula::eval(Self, FormulaEnv) -> @quantity.Quantity raise FormulaError
+pub fn Formula::expr(Self) -> FormulaExpr
+pub fn Formula::from_term(String, FormulaTerm, @dimension.Dimension, String, String) -> Self
+pub fn Formula::inputs(Self) -> Array[FormulaInput]
+pub fn Formula::name(Self) -> String
+pub fn Formula::new(String, Array[FormulaInput], @dimension.Dimension, FormulaExpr, String, String) -> Self
+pub fn Formula::output(Self) -> @dimension.Dimension
+
+pub struct FormulaEnv {
+  values : Map[String, @quantity.Quantity]
+}
+pub fn FormulaEnv::get(Self, String) -> @quantity.Quantity?
+pub fn FormulaEnv::new() -> Self
+pub fn FormulaEnv::with_input(Self, String, @quantity.Quantity) -> Self
+
+pub(all) enum FormulaExpr {
+  Const(Double)
+  QuantityConst(Double, @unit.Un)
+  Var(String)
+  Add(FormulaExpr, FormulaExpr)
+  Sub(FormulaExpr, FormulaExpr)
+  Mul(FormulaExpr, FormulaExpr)
+  Div(FormulaExpr, FormulaExpr)
+  Pow(FormulaExpr, Int)
+} derive(Eq, @debug.Debug)
+pub fn FormulaExpr::add(Self, Self) -> Self
+pub fn FormulaExpr::constant(Double) -> Self
+pub fn FormulaExpr::div(Self, Self) -> Self
+pub fn FormulaExpr::eval(Self, FormulaEnv) -> @quantity.Quantity raise FormulaError
+pub fn FormulaExpr::mul(Self, Self) -> Self
+pub fn FormulaExpr::pow(Self, Int) -> Self
+pub fn FormulaExpr::quantity(Double, @unit.Un) -> Self
+pub fn FormulaExpr::sub(Self, Self) -> Self
+pub fn FormulaExpr::variable(String) -> Self
+
+pub struct FormulaInput {
+  name : String
+  dimension : @dimension.Dimension
+  description : String
+} derive(Eq, @debug.Debug)
+pub fn FormulaInput::description(Self) -> String
+pub fn FormulaInput::dimension(Self) -> @dimension.Dimension
+pub fn FormulaInput::name(Self) -> String
+pub fn FormulaInput::new(String, @dimension.Dimension, String) -> Self
+
+pub struct FormulaTerm {
+  expr : FormulaExpr
+  inputs : Array[FormulaInput]
+}
+pub fn FormulaTerm::add(Self, Self) -> Self
+pub fn FormulaTerm::expr(Self) -> FormulaExpr
+pub fn FormulaTerm::inputs(Self) -> Array[FormulaInput]
+pub fn FormulaTerm::pow(Self, Int) -> Self
+pub fn FormulaTerm::sub(Self, Self) -> Self
+pub impl Div for FormulaTerm
+pub impl Mul for FormulaTerm
+
+// Type aliases
+
+// Traits
+
