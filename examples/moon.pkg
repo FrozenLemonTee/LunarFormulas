@@ -1,0 +1,15 @@
+// Runnable cookbook examples for LunarFormulas.
+import {
+  "FrozenLemonTee/LunarFormulas/common",
+  "FrozenLemonTee/LunarFormulas/mechanics" @formula_mechanics,
+  "FrozenLemonTee/LunarUnits/core/dimension",
+  "FrozenLemonTee/LunarUnits/core/quantity",
+  "FrozenLemonTee/LunarUnits/units/si",
+  "FrozenLemonTee/LunarUnits/units/angle",
+  "FrozenLemonTee/LunarUnits/units/mechanics" @mechanical_units,
+  "FrozenLemonTee/LunarUnits/notation/preset",
+  "FrozenLemonTee/LunarUnits/notation/parser",
+  "FrozenLemonTee/LunarUnits/quantities/qangle",
+  "FrozenLemonTee/LunarUnits/quantities/qgeometry",
+  "FrozenLemonTee/LunarUnits/quantities/qmechanics",
+}
