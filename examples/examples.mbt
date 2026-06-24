@@ -1,21 +1,10 @@
 // LunarFormulas worked examples. Every block is a runnable test, matching the
-// cookbook style used by LunarUnits.
+// cookbook style used by LunarUnits. Formulas are anonymous, composable values:
+// you reference vocabulary, combine it with operators, and evaluate — just like
+// composing units in LunarUnits.
 
 ///|
-/// Formula objects are inspectable. Applications can enumerate mechanics
-/// formulas and read display text, inputs and output dimensions.
-test "inspect the mechanics formula catalog" {
-  let formulas = @formula_mechanics.formulas()
-  assert_eq(formulas.length(), 6)
-  assert_eq(formulas[0].name(), "force")
-  assert_eq(formulas[0].display(), "F = m * a")
-  assert_true(
-    formulas[0].output().is_same(@mechanical_units.newton.dimension()),
-  )
-}
-
-///|
-/// Newton's second law as a first-class formula object. The caller supplies
+/// Newton's second law as an anonymous formula value. The caller supplies
 /// quantities in a named environment, and the formula returns a quantity.
 test "evaluate force from mass and acceleration" {
   let env = @common.FormulaEnv::new()
@@ -52,8 +41,7 @@ test "evaluate kinetic energy" {
 
 ///|
 /// Because LunarUnits models angle as an extension dimension, torque and energy
-/// are distinct: torque is energy per angle (`N*m/rad`), while energy is
-/// `N*m`.
+/// are distinct: torque is energy per angle (`N*m/rad`), while energy is `N*m`.
 test "torque and energy are distinct" {
   let torque = @quantity.Quantity::new(
     10.0,
@@ -90,27 +78,40 @@ test "parse inputs and evaluate a formula" {
 }
 
 ///|
-/// Defining a formula reads like writing the equation. `input` names a variable
-/// and its dimension; combining terms with `*` builds the expression and
-/// collects the input metadata automatically — no hand-written `inputs` array.
-test "define a formula with the DSL" {
-  let mass = @common.input("mass", @dimension.Dimension::mass(), "Mass")
+/// The vocabulary composes with operators into formulas the catalog never named.
+/// Mechanical power is just force times velocity — the dimension (watt) is
+/// inferred and the formula evaluates directly, with no construction step.
+test "compose a new formula from the vocabulary" {
+  let power = @formula_mechanics.force * @formula_mechanics.velocity
+  assert_true(power.dimension().is_same(@mechanical_units.watt.dimension()))
+  let env = @common.FormulaEnv::new()
+    .with_input("force", @qmechanics.newtons(10.0))
+    .with_input("velocity", @qmechanics.meters_per_second(3.0))
+  assert_eq(power.eval(env).to(@mechanical_units.watt).value(), 30.0)
+}
+
+///|
+/// Defining your own variables reads like writing the equation. `input` names a
+/// variable and its dimension; combining with `*` builds the expression,
+/// collects the inputs and synthesises the output dimension — no `inputs` array
+/// and no restated output dimension. The result is evaluated directly.
+test "define and evaluate a formula with the DSL" {
+  let mass = @common.input("mass", @dimension.Dimension::mass())
   let velocity = @common.input(
     "velocity",
     @mechanical_units.meter_per_second.dimension(),
-    "Velocity",
   )
-  let momentum = @common.Formula::from_term(
-    "momentum",
-    mass * velocity,
-    @dimension.Dimension::mass().mul(
-      @mechanical_units.meter_per_second.dimension(),
-    ),
-    "p = m * v",
-    "Linear momentum from mass and velocity.",
-  )
-  // Both inputs were gathered from the term automatically.
+  let momentum = mass * velocity
   assert_eq(momentum.inputs().length(), 2)
+  assert_true(
+    momentum
+    .dimension()
+    .is_same(
+      @dimension.Dimension::mass().mul(
+        @mechanical_units.meter_per_second.dimension(),
+      ),
+    ),
+  )
   let env = @common.FormulaEnv::new()
     .with_input("mass", @quantity.Quantity::new(2.0, @si.kilogram))
     .with_input("velocity", @qmechanics.meters_per_second(3.0))
@@ -122,19 +123,12 @@ test "define a formula with the DSL" {
 /// LunarUnits, powers use `.pow(n)` rather than `^`, and `constant` adds a
 /// dimensionless factor that contributes no input.
 test "compose constants and powers like ordinary maths" {
-  let mass = @common.input("mass", @dimension.Dimension::mass(), "Mass")
+  let mass = @common.input("mass", @dimension.Dimension::mass())
   let velocity = @common.input(
     "velocity",
     @mechanical_units.meter_per_second.dimension(),
-    "Velocity",
   )
-  let kinetic_energy = @common.Formula::from_term(
-    "kinetic_energy",
-    @common.constant(0.5) * mass * velocity.pow(2),
-    @mechanical_units.joule.dimension(),
-    "E_k = 1/2 * m * v^2",
-    "Translational kinetic energy.",
-  )
+  let kinetic_energy = @common.constant(0.5) * mass * velocity.pow(2)
   let env = @common.FormulaEnv::new()
     .with_input("mass", @quantity.Quantity::new(4.0, @si.kilogram))
     .with_input("velocity", @qmechanics.meters_per_second(3.0))
@@ -146,23 +140,9 @@ test "compose constants and powers like ordinary maths" {
 /// energy per plane angle, so dividing by `1 rad` keeps the angle dimension
 /// explicit while the formula still reads like `tau = F * r / rad`.
 test "build a formula with a unit-bearing constant" {
-  let force = @common.input(
-    "force",
-    @mechanical_units.newton.dimension(),
-    "Force",
-  )
-  let lever_arm = @common.input(
-    "lever_arm",
-    @dimension.Dimension::length(),
-    "Lever arm",
-  )
-  let torque = @common.Formula::from_term(
-    "torque",
-    force * lever_arm / @common.quantity(1.0, @angle.radian),
-    @mechanical_units.joule.dimension().div(@angle.radian.dimension()),
-    "tau = F * r / rad",
-    "Torque as energy per plane angle.",
-  )
+  let force = @common.input("force", @mechanical_units.newton.dimension())
+  let lever_arm = @common.input("lever_arm", @dimension.Dimension::length())
+  let torque = force * lever_arm / @common.quantity(1.0, @angle.radian)
   let env = @common.FormulaEnv::new()
     .with_input(
       "force",
@@ -174,49 +154,25 @@ test "build a formula with a unit-bearing constant" {
 }
 
 ///|
-/// Reusing the same input is fine: the DSL deduplicates by name, so the formula
-/// keeps a single descriptor for it.
-test "reusing an input is deduplicated" {
-  let velocity = @common.input(
-    "velocity",
-    @mechanical_units.meter_per_second.dimension(),
-    "Velocity",
-  )
-  let speed_squared = @common.Formula::from_term(
-    "speed_squared",
-    velocity * velocity,
-    @mechanical_units.meter_per_second.dimension().pow(2),
-    "s = v * v",
-    "Squared speed.",
-  )
-  assert_eq(speed_squared.inputs().length(), 1)
+/// `renamed` derives distinct variables from one predefined variable, so the
+/// same physical quantity can appear several times. Here two masses are summed.
+test "reuse a variable several times with renamed" {
+  let mass = @common.input("mass", @dimension.Dimension::mass())
+  let total_mass = mass.renamed("m1").add(mass.renamed("m2"))
+  let env = @common.FormulaEnv::new()
+    .with_input("m1", @quantity.Quantity::new(2.0, @si.kilogram))
+    .with_input("m2", @quantity.Quantity::new(3.0, @si.kilogram))
+  assert_eq(total_mass.eval(env).value(), 5.0)
 }
 
 ///|
-/// When formulas are assembled dynamically, `checked_from_term` guards against
-/// using one input name with two different dimensions.
-test "checked_from_term reports an inconsistent input" {
-  let as_length = @common.input(
-    "x",
-    @dimension.Dimension::length(),
-    "X as length",
-  )
-  let as_time = @common.input("x", @dimension.Dimension::time(), "X as time")
-  let mut caught = false
-  try
-    @common.Formula::checked_from_term(
-      "inconsistent",
-      as_length * as_time,
-      @dimension.Dimension::length().mul(@dimension.Dimension::time()),
-      "bad = x * x",
-      "Same name, two dimensions.",
-    )
-    |> ignore
-  catch {
-    @common.InputDimensionConflict((name, _first, _second)) => {
-      caught = true
-      assert_eq(name, "x")
-    }
-  }
-  assert_true(caught)
+/// Composition is total even when an input name is used with two different
+/// dimensions; the conflict surfaces at evaluation, where a single bound value
+/// can only match one of the declared dimensions.
+test "an inconsistent input surfaces at evaluation" {
+  let as_length = @common.input("x", @dimension.Dimension::length())
+  let as_time = @common.input("x", @dimension.Dimension::time())
+  let bad = as_length * as_time
+  let env = @common.FormulaEnv::new().with_input("x", @qgeometry.meters(2.0))
+  assert_true(bad.checked_eval(env) is None)
 }

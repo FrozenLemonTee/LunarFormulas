@@ -6,10 +6,9 @@ the project.
 
 Covered:
 
-Evaluating existing formulas:
+Evaluating predefined formulas:
 
-- Inspecting the mechanics formula catalog.
-- Evaluating Newton's second law through a `Formula` object.
+- Evaluating Newton's second law directly with `force_formula.eval`.
 - Rejecting an input with the wrong dimension.
 - Evaluating kinetic energy from mass and velocity.
 - Showing torque (`N*m/rad`) and energy (`N*m`) are distinct.
@@ -17,13 +16,16 @@ Evaluating existing formulas:
 - Parsing user-facing quantity strings with LunarUnits and passing them into a
   formula environment.
 
-Defining formulas with the DSL (the human-friendly API):
+Composing your own formulas:
 
-- Building a formula with `input` + `*`, with inputs collected automatically.
+- Combining the vocabulary with operators into a new formula (`force * velocity`
+  for power), with the dimension inferred and evaluated directly.
+- Building a formula from `input` variables, with inputs collected and the
+  output dimension inferred automatically — no construction step.
 - Composing `constant` and `.pow(n)` so the definition reads like the equation.
 - Using a unit-bearing `quantity` factor (torque as energy per radian).
-- Deduplicating a reused input by name.
-- Catching an inconsistent input dimension with `checked_from_term`.
+- Reusing the same quantity several times with `.renamed(...)`.
+- Watching an inconsistent input dimension surface at evaluation.
 
 Run them with:
 
