@@ -1,14 +1,24 @@
 ///|
-/// What went wrong while evaluating a formula object.
+/// What went wrong while evaluating a formula.
 ///
 /// The payloads are structured so callers can distinguish missing inputs,
-/// rejected input dimensions, expression-level dimension errors and declared
-/// output mismatches.
+/// rejected input dimensions and expression-level dimension errors.
+///
+/// # Example
+///
+/// ```mbt check
+/// test {
+///   let x = input("x", @dimension.Dimension::length())
+///   try x.eval(FormulaEnv::new()) |> ignore catch {
+///     MissingInput(name) => assert_eq(name, "x")
+///     _ => assert_true(false)
+///   }
+/// }
+/// ```
 pub suberror FormulaError {
   MissingInput(String)
   InputDimensionMismatch((String, @dimension.Dimension, @dimension.Dimension))
   ExpressionDimensionMismatch((@dimension.Dimension, @dimension.Dimension))
-  OutputDimensionMismatch((@dimension.Dimension, @dimension.Dimension))
 } derive(Eq, Debug)
 
 ///|
@@ -20,8 +30,6 @@ pub impl Show for FormulaError with fn output(self, logger) {
       "input \"\{name}\" has an incompatible dimension"
     ExpressionDimensionMismatch((_expected, _actual)) =>
       "formula expression has incompatible dimensions"
-    OutputDimensionMismatch((_expected, _actual)) =>
-      "formula output has an incompatible dimension"
   }
   logger.write_string(message)
 }
@@ -62,12 +70,33 @@ fn FormulaEnv::copy_values(
 
 ///|
 /// Creates an empty formula environment.
+///
+/// # Example
+///
+/// ```mbt check
+/// test {
+///   assert_true(FormulaEnv::new().get("x") is None)
+/// }
+/// ```
 pub fn FormulaEnv::new() -> FormulaEnv {
   { values: Map([]) }
 }
 
 ///|
 /// Returns a new environment with `name` bound to `value`.
+///
+/// # Example
+///
+/// ```mbt check
+/// test {
+///   let meter = @unit.Un::base("m", @dimension.Dimension::length())
+///   let env = FormulaEnv::new().with_input(
+///     "d",
+///     @quantity.Quantity::new(3.0, meter),
+///   )
+///   assert_true(env.get("d") is Some(_))
+/// }
+/// ```
 pub fn FormulaEnv::with_input(
   self : FormulaEnv,
   name : String,
@@ -80,6 +109,14 @@ pub fn FormulaEnv::with_input(
 
 ///|
 /// Looks up an input quantity.
+///
+/// # Example
+///
+/// ```mbt check
+/// test {
+///   assert_true(FormulaEnv::new().get("missing") is None)
+/// }
+/// ```
 pub fn FormulaEnv::get(self : FormulaEnv, name : String) -> @quantity.Quantity? {
   self.values.get(name)
 }
@@ -90,6 +127,15 @@ pub fn FormulaEnv::get(self : FormulaEnv, name : String) -> @quantity.Quantity? 
 /// `FormulaExpr` intentionally evaluates only over `Quantity`. Affine points,
 /// logarithmic levels and gains should be converted at the package boundary,
 /// not placed into this multiplicative expression tree.
+///
+/// # Example
+///
+/// ```mbt check
+/// test {
+///   let expr = FormulaExpr::variable("x").mul(FormulaExpr::constant(2.0))
+///   assert_true(expr is Mul(_, _))
+/// }
+/// ```
 pub(all) enum FormulaExpr {
   Const(Double)
   QuantityConst(Double, @unit.Un)
@@ -103,6 +149,12 @@ pub(all) enum FormulaExpr {
 
 ///|
 /// Creates a dimensionless constant expression.
+///
+/// ```mbt check
+/// test {
+///   assert_true(FormulaExpr::constant(0.5) is Const(_))
+/// }
+/// ```
 pub fn FormulaExpr::constant(value : Double) -> FormulaExpr {
   Const(value)
 }
@@ -112,42 +164,93 @@ pub fn FormulaExpr::constant(value : Double) -> FormulaExpr {
 ///
 /// This is useful for formulas that need a fixed unit-bearing factor, such as
 /// expressing torque as energy per radian.
+///
+/// ```mbt check
+/// test {
+///   let rad = @unit.Un::base("rad", @dimension.Dimension::custom("angle"))
+///   assert_true(FormulaExpr::quantity(1.0, rad) is QuantityConst(_, _))
+/// }
+/// ```
 pub fn FormulaExpr::quantity(value : Double, unit : @unit.Un) -> FormulaExpr {
   QuantityConst(value, unit)
 }
 
 ///|
 /// Creates a variable expression.
+///
+/// ```mbt check
+/// test {
+///   assert_true(FormulaExpr::variable("x") is Var(_))
+/// }
+/// ```
 pub fn FormulaExpr::variable(name : String) -> FormulaExpr {
   Var(name)
 }
 
 ///|
 /// Creates an addition expression.
+///
+/// ```mbt check
+/// test {
+///   assert_true(
+///     FormulaExpr::variable("a").add(FormulaExpr::variable("b")) is Add(_, _),
+///   )
+/// }
+/// ```
 pub fn FormulaExpr::add(self : FormulaExpr, other : FormulaExpr) -> FormulaExpr {
   Add(self, other)
 }
 
 ///|
 /// Creates a subtraction expression.
+///
+/// ```mbt check
+/// test {
+///   assert_true(
+///     FormulaExpr::variable("a").sub(FormulaExpr::variable("b")) is Sub(_, _),
+///   )
+/// }
+/// ```
 pub fn FormulaExpr::sub(self : FormulaExpr, other : FormulaExpr) -> FormulaExpr {
   Sub(self, other)
 }
 
 ///|
 /// Creates a multiplication expression.
+///
+/// ```mbt check
+/// test {
+///   assert_true(
+///     FormulaExpr::variable("a").mul(FormulaExpr::variable("b")) is Mul(_, _),
+///   )
+/// }
+/// ```
 pub fn FormulaExpr::mul(self : FormulaExpr, other : FormulaExpr) -> FormulaExpr {
   Mul(self, other)
 }
 
 ///|
 /// Creates a division expression.
+///
+/// ```mbt check
+/// test {
+///   assert_true(
+///     FormulaExpr::variable("a").div(FormulaExpr::variable("b")) is Div(_, _),
+///   )
+/// }
+/// ```
 pub fn FormulaExpr::div(self : FormulaExpr, other : FormulaExpr) -> FormulaExpr {
   Div(self, other)
 }
 
 ///|
 /// Creates an integer-power expression.
+///
+/// ```mbt check
+/// test {
+///   assert_true(FormulaExpr::variable("x").pow(2) is Pow(_, _))
+/// }
+/// ```
 pub fn FormulaExpr::pow(self : FormulaExpr, exponent : Int) -> FormulaExpr {
   Pow(self, exponent)
 }
