@@ -4,19 +4,20 @@
 
 LunarFormulas 是基于
 [`FrozenLemonTee/LunarUnits`](https://github.com/FrozenLemonTee/LunarUnits)
-的工程/科学公式库。它把原本只能写在文档里的“参数应该是什么量纲”变成可检查、可测试、可枚举的公式对象。
+的工程/科学公式库。它把原本只能写在文档里的“参数应该是什么量纲”变成匿名、可组合、带量纲校验的公式值。
 
-本项目独立于 LunarUnits。LunarUnits 继续作为运行时量纲检查、单位换算和数量模型；LunarFormulas 只消费 LunarUnits，并在其上提供可复用的领域公式对象。
+本项目独立于 LunarUnits。LunarUnits 继续作为运行时量纲检查、单位换算和数量模型；LunarFormulas 只消费 LunarUnits，并在其上提供可复用的领域公式值。
+
+`Formula` 之于 LunarFormulas，正如 `Un` 之于 LunarUnits：`meter / second.pow(2)` 是一个可直接组合使用的匿名单位，而 `mass * acceleration` 是一个用运算符组合、可直接求值的匿名公式值。量纲随运算自动传播，无需手写复述。
 
 ## 功能
 
-- `Formula`：带名称、输入、输出、表达式和说明的可求值公式对象。
-- `FormulaInput`：记录输入名称、说明和期望量纲。
+- `Formula`：匿名、可组合、可求值的公式值。用 `*`、`/`、`add`、`sub`、`.pow(n)` 组合公式，自动收集输入、自动合成量纲，`eval` 返回 LunarUnits `Quantity`。
+- `FormulaInput`：一个自由变量的名称与期望量纲。
 - `FormulaExpr`：数量表达式树，支持常量、变量、加减、乘除和整数幂。
-- `FormulaTerm`：DSL 层，让公式的构建与组合像书写数学公式一样直观（`mass * acc`、`constant(0.5) * mass * velocity.pow(2)`），并自动收集输入元数据。
 - `FormulaEnv`：公式求值环境，按名称绑定 LunarUnits `Quantity`。
-- `FormulaError` / `FormulaBuildError`：分别区分求值错误（缺少输入、量纲不匹配）和构建错误（同名输入量纲冲突）。
-- `mechanics` 力学公式：力、功、功率、动能、扭矩、旋转做功。
+- `FormulaError`：结构化求值错误（缺少输入、输入量纲不匹配、表达式量纲不匹配）。
+- `mechanics`：预置输入变量（mass、acceleration、force…）与由它们组合出的公式（力、功、功率、动能、扭矩、旋转做功）。
 - 可运行示例和测试。
 
 ## 安装
@@ -42,6 +43,8 @@ import {
 
 ## 快速开始
 
+按名称绑定输入，然后直接对公式求值：
+
 ```moonbit
 let env = @common.FormulaEnv::new()
   .with_input("mass", @quantity.Quantity::new(2.0, @si.kilogram))
@@ -53,6 +56,13 @@ let env = @common.FormulaEnv::new()
 let force = @formula_mechanics.force_formula.eval(env)
 // force.value() == 6.0
 // force.unit().is_compatible(@mechanical_units.newton)
+```
+
+公式像单位一样可组合。把 `force` 和 `velocity` 两个变量相乘就得到机械功率——一个目录里没有命名、量纲自动推断的匿名公式：
+
+```moonbit
+let power = @formula_mechanics.force * @formula_mechanics.velocity
+// power.dimension().is_same(@mechanical_units.watt.dimension())
 ```
 
 错误量纲会被拦截：
@@ -68,32 +78,30 @@ let result = @formula_mechanics.force_formula.checked_eval(bad)
 
 ## 定义公式
 
-公式用 DSL 定义，写法贴近数学公式本身。`input` 记录每个变量的元数据，组合各项时会自动收集 `inputs` 数组：
+`input` 命名一个变量及其期望量纲——这是唯一需要写下名字的地方，正如 LunarUnits 里的 `Un::base("m", …)`。用运算符组合变量即可构建公式，自动收集输入、自动合成输出量纲。结果是一个可直接求值的匿名值，没有构造步骤，也不复述输出量纲：
 
 ```moonbit
-let mass = @common.input("mass", @dimension.Dimension::mass(), "Mass")
-let acc = @common.input("acceleration", acceleration_dimension(), "Acceleration")
+let mass = @common.input("mass", @dimension.Dimension::mass())
+let acc = @common.input("acceleration", acceleration_dimension())
 
-pub let force_formula : @common.Formula = @common.Formula::from_term(
-  "force",
-  mass * acc,
-  @mechanical_units.newton.dimension(),
-  "F = m * a",
-  "Computes force from mass and acceleration.",
-)
+// `force` 是一个 Formula；量纲由 `mass * acc` 推断而来。
+pub let force : @common.Formula = mass * acc
 ```
 
-组合方式与 LunarUnits 保持一致：用 `*` / `/` 组合各项，用 `.pow(n)` 取整数幂（不用 `^`），用 `constant` / `quantity` 构造常量因子。`Formula::from_term` 是全函数（不会失败），适合顶层 `let` 定义；`Formula::checked_from_term` 则在同名输入出现两种不同量纲时抛出 `FormulaBuildError`。
+组合方式与 LunarUnits 保持一致：用 `*` / `/` 组合公式，用 `.pow(n)` 取整数幂（不用 `^`），用 `constant` / `quantity` 构造无量纲与带单位的常量因子。当同一物理量需要出现多次（两个质量 `m1`、`m2`），用 `.renamed("m1")` 从一个变量派生出多个不同名变量。
 
-## 为什么做成公式对象
+预置变量名字固定，因此「同名不同量纲」不是构建错误：组合保持全函数，冲突在求值时暴露——绑定到该名字的单个值只能匹配一种量纲。
 
-普通函数只能求值；公式对象还可以被 CLI、GUI、文档站和测试读取：
+## 为什么做成公式值
 
-- 公式名称和展示式；
-- 输入名称、说明和量纲；
-- 输出量纲；
-- 可检查求值；
-- 后续自动生成命令行参数、表单或文档。
+普通函数 `force(m, a)` 只能求值，无法作为「值」被检查、组合或量纲校验。LunarFormulas 把公式建模为一个携带自由变量与量纲的匿名值，于是应用可以得到：
+
+- 量纲安全的组合——量纲随 `*` / `/` / `.pow(n)` 传播，不匹配被捕获；
+- 可复用的构建块——一套领域变量与公式词汇，可组合出新公式；
+- 在真实 LunarUnits 数量上求值，求值前校验输入量纲；
+- 与 LunarUnits 一致的使用风格——组合出的单位、数量本身都是一等值。
+
+> 注：本库的目标已从「让应用程序发现公式元数据」转向「更优雅、更自然的公式书写」。若仍需应用层发现公式，可在本库之上仿照 LunarUnits 的 catalog 另建带元数据的目录适配器，而不污染核心的匿名公式值。
 
 ## 重点示例：扭矩 vs 能量
 
@@ -103,7 +111,7 @@ LunarUnits 把 angle 建模为扩展维度，因此：
 - 扭矩：`N*m/rad`
 - 旋转做功：`work = torque * angle`
 
-这让“把能量误传给扭矩参数”这类错误可以直接被公式对象拦截。
+这让“把能量误传给扭矩参数”这类错误可以在求值时被直接拦截。
 
 ## 开发
 

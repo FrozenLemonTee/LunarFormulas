@@ -5,27 +5,34 @@
 LunarFormulas is a small engineering and scientific formula library built on
 [`FrozenLemonTee/LunarUnits`](https://github.com/FrozenLemonTee/LunarUnits).
 It turns formula requirements that are often written only in prose into
-first-class, unit-checked objects.
+anonymous, composable, unit-checked values.
 
 The project is intentionally separate from LunarUnits. LunarUnits remains the
 runtime dimension-checked quantity and unit system; LunarFormulas consumes that
-core and provides reusable formula objects for applications, CLIs, demos and
+core and provides reusable formula values for applications, CLIs, demos and
 documentation.
+
+A `Formula` is to LunarFormulas what a `Un` is to LunarUnits: just as
+`meter / second.pow(2)` is an anonymous unit you compose and use directly, a
+formula such as `mass * acceleration` is an anonymous value you compose with
+operators and then evaluate. Dimensions propagate automatically; nothing is
+restated by hand.
 
 ## Features
 
-- `Formula` — a named, inspectable and evaluable formula object.
-- `FormulaInput` — input metadata with an expected LunarUnits dimension.
+- `Formula` — an anonymous, composable, evaluable formula value. Combine
+  formulas with `*`, `/`, `add`, `sub` and `.pow(n)`; the inputs are collected
+  and the dimension is synthesised automatically, then `eval` returns a
+  LunarUnits `Quantity`.
+- `FormulaInput` — a free variable's name and expected LunarUnits dimension.
 - `FormulaExpr` — a small quantity-valued expression tree supporting constants,
   variables, addition, subtraction, multiplication, division and integer powers.
-- `FormulaTerm` — a DSL layer that lets you build and compose formulas like
-  ordinary maths (`mass * acc`, `constant(0.5) * mass * velocity.pow(2)`), with
-  input metadata collected automatically.
 - `FormulaEnv` — immutable named input bindings for formula evaluation.
-- `FormulaError` / `FormulaBuildError` — structured errors for evaluation
-  (missing inputs, dimension mismatches) and construction (conflicting inputs).
-- `mechanics` formulas for force, work, power, kinetic energy, torque and
-  rotational work.
+- `FormulaError` — structured evaluation errors (missing input, input dimension
+  mismatch, expression dimension mismatch).
+- `mechanics` — predefined input variables (mass, acceleration, force, …) and
+  the formulas composed from them (force, work, power, kinetic energy, torque,
+  rotational work).
 - Runnable examples and tests showing dimension-safe formula evaluation.
 
 ## Installation
@@ -52,6 +59,8 @@ For local development next to the LunarUnits repository, this repo includes a
 
 ## Quick Start
 
+Bind inputs by name, then evaluate a formula directly:
+
 ```moonbit
 let env = @common.FormulaEnv::new()
   .with_input("mass", @quantity.Quantity::new(2.0, @si.kilogram))
@@ -65,13 +74,13 @@ let force = @formula_mechanics.force_formula.eval(env)
 // force.unit().is_compatible(@mechanical_units.newton)
 ```
 
-Formula objects can also be inspected:
+Formulas compose like units. Multiplying the `force` and `velocity` variables
+gives mechanical power — an anonymous formula the catalog never named, with its
+dimension inferred:
 
 ```moonbit
-let formula = @formula_mechanics.force_formula
-let name = formula.name() // "force"
-let display = formula.display() // "F = m * a"
-let inputs = formula.inputs()
+let power = @formula_mechanics.force * @formula_mechanics.velocity
+// power.dimension().is_same(@mechanical_units.watt.dimension())
 ```
 
 Invalid input dimensions are rejected before a result is returned:
@@ -79,10 +88,7 @@ Invalid input dimensions are rejected before a result is returned:
 ```moonbit
 let bad = @common.FormulaEnv::new()
   .with_input("mass", @quantity.Quantity::new(2.0, @si.kilogram))
-  .with_input(
-    "acceleration",
-    @quantity.Quantity::new(3.0, @si.meter),
-  )
+  .with_input("acceleration", @quantity.Quantity::new(3.0, @si.meter))
 
 let result = @formula_mechanics.force_formula.checked_eval(bad)
 // result is None
@@ -90,43 +96,45 @@ let result = @formula_mechanics.force_formula.checked_eval(bad)
 
 ## Defining a Formula
 
-Formulas are built with the DSL so the definition reads like the maths itself.
-`input` records each variable's metadata, and combining terms collects the
-`inputs` array automatically:
+`input` names a variable and its expected dimension — the one place a name is
+written down, exactly like `Un::base("m", …)` in LunarUnits. Combining variables
+with operators builds the formula, collects the inputs and synthesises the
+output dimension automatically. The result is an anonymous value you evaluate
+directly; there is no construction step and no restated output dimension:
 
 ```moonbit
-let mass = @common.input("mass", @dimension.Dimension::mass(), "Mass")
-let acc = @common.input("acceleration", acceleration_dimension(), "Acceleration")
+let mass = @common.input("mass", @dimension.Dimension::mass())
+let acc = @common.input("acceleration", acceleration_dimension())
 
-pub let force_formula : @common.Formula = @common.Formula::from_term(
-  "force",
-  mass * acc,
-  @mechanical_units.newton.dimension(),
-  "F = m * a",
-  "Computes force from mass and acceleration.",
-)
+// `force` is a Formula; its dimension is inferred from `mass * acc`.
+pub let force : @common.Formula = mass * acc
 ```
 
-Composition mirrors LunarUnits conventions: `*` / `/` compose terms, `.pow(n)`
-takes integer powers (never `^`), and `constant` / `quantity` build constant
-factors. `Formula::from_term` is total and fits top-level `let` definitions;
-`Formula::checked_from_term` instead raises `FormulaBuildError` when one input
-name is used with two different dimensions.
+Composition mirrors LunarUnits conventions: `*` / `/` compose formulas,
+`.pow(n)` takes integer powers (never `^`), and `constant` / `quantity` build
+dimensionless and unit-bearing constant factors. When the same physical quantity
+must appear more than once (two masses `m1` and `m2`), derive distinct variables
+from one with `.renamed("m1")`.
 
-## Why Formula Objects?
+A predefined variable's name is fixed, so a same-name-different-dimension
+conflict is not a build error: composition stays total and the conflict surfaces
+at evaluation, where a single bound value can only match one dimension.
 
-A plain function such as `force(m, a)` can compute a result, but it does not
-carry enough metadata for a CLI, GUI or documentation site to discover the
-formula, render input fields, show an equation or explain expected dimensions.
+## Why Formula Values?
 
-LunarFormulas models formulas as data plus evaluation. That gives applications
-one reusable source of truth for:
+A plain function such as `force(m, a)` computes a result but cannot be inspected,
+composed or dimension-checked as a value. LunarFormulas models a formula as an
+anonymous value that carries its free variables and its dimension, so
+applications get:
 
-- formula names and display equations;
-- input names, descriptions and dimensions;
-- output dimensions;
-- checked evaluation;
-- future CLI/UI/documentation generation.
+- unit-checked composition — dimensions propagate through `*` / `/` / `.pow(n)`,
+  and mismatches are caught;
+- reusable building blocks — a domain vocabulary of variables and formulas you
+  combine into new formulas;
+- evaluation over real LunarUnits quantities, with input dimensions checked
+  before a result is returned;
+- a usage style consistent with LunarUnits, where composed units and quantities
+  are themselves first-class values.
 
 ## Design Boundary
 
@@ -136,7 +144,7 @@ those types have different algebra and should be adapted at domain boundaries.
 
 Torque is the first showcase for this boundary. LunarUnits models angle as an
 extension dimension, so torque is energy per angle (`N*m/rad`) while energy is
-plain `N*m`. Rotational work is then a normal checked formula:
+plain `N*m`. Rotational work is then a normal dimension-checked formula:
 
 ```text
 work = torque * angle
@@ -148,11 +156,10 @@ Passing energy where torque is expected is rejected.
 
 ```text
 common/
-  formula_expr.mbt    FormulaEnv, FormulaExpr, FormulaError
-  formula.mbt         FormulaInput and Formula
-  formula_term.mbt    FormulaTerm DSL, input/constant/quantity, from_term
+  formula_expr.mbt    FormulaExpr, FormulaEnv, FormulaError
+  formula.mbt         FormulaInput and the Formula value, input/constant/quantity
 mechanics/
-  mechanics_formulas.mbt
+  mechanics_formulas.mbt   input variables and the formulas composed from them
 examples/
   examples.mbt        runnable cookbook examples
 docs/
@@ -170,7 +177,7 @@ moon test
 ```
 
 The workspace includes `../LunarUnits` for local development. The module
-dependency still records `FrozenLemonTee/LunarUnits@0.1.6` for publishing.
+dependency records `FrozenLemonTee/LunarUnits@0.1.6` for publishing.
 
 ## License
 

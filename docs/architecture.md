@@ -1,7 +1,7 @@
 # LunarFormulas Architecture
 
-This document records the first milestone package structure and the design
-boundaries that should remain stable as the formula ecosystem grows.
+This document records the package structure and the design boundaries that
+should remain stable as the formula ecosystem grows.
 
 ## Core Direction
 
@@ -16,64 +16,71 @@ LunarUnits core quantities/units
 ```
 
 The formula library must not change LunarUnits' `Dimension`, `Un` or `Quantity`
-semantics. It consumes those APIs and turns domain equations into checked,
-inspectable formula objects.
+semantics. It consumes those APIs and turns domain equations into anonymous,
+composable, dimension-checked formula values.
+
+A `Formula` is the formula counterpart of a LunarUnits `Un`: an anonymous value
+that is composed with operators and evaluated, never a named metadata object.
+Discoverability is intentionally out of scope; if an application needs to
+enumerate formulas, a metadata catalog can be layered on top (mirroring
+LunarUnits' catalog) without changing the anonymous core.
 
 ## Common Package
 
 `common/` contains the reusable formula model:
 
-- `FormulaInput`: input name, expected dimension and description.
+- `FormulaInput`: a free variable's name and expected dimension.
 - `FormulaExpr`: quantity-valued expression tree.
 - `FormulaEnv`: immutable map from input names to `Quantity` values.
-- `Formula`: formula metadata plus checked evaluation.
+- `Formula`: an anonymous, composable, evaluable formula value.
 - `FormulaError`: structured evaluation errors.
-- `FormulaTerm`: DSL wrapper for building expressions like ordinary math.
-- `FormulaBuildError`: structured build-time errors.
 
-`Formula::eval` first checks that every declared input exists and has the
-expected dimension. It then evaluates the expression and verifies that the
-result dimension matches the formula's declared output dimension.
+`Formula::eval` first checks that every input exists in the environment with the
+expected dimension, then evaluates the expression. There is no declared output
+dimension to verify: the result dimension simply is `Formula::dimension()`,
+synthesised while the formula was composed.
 
 `Formula::checked_eval` returns `None` for any formula error and is intended for
 applications, CLIs and data validation flows that should avoid exceptions.
 
-## Formula DSL
+## Formula composition
 
 `FormulaExpr` is the evaluation AST, but defining formulas directly on it reads
-like assembling syntax trees. `FormulaTerm` adds a thin DSL layer so formula
-construction and composition read like writing the maths:
+like assembling syntax trees. `Formula` wraps it so construction and composition
+read like writing the maths, and so a formula is a value you use directly:
 
 ```moonbit
-let mass = input("mass", @dimension.Dimension::mass(), "Mass")
-let acc = input("acceleration", acceleration_dimension(), "Acceleration")
-let force = Formula::from_term("force", mass * acc, ..., "F = m * a", ...)
+let mass = input("mass", @dimension.Dimension::mass())
+let acc = input("acceleration", acceleration_dimension())
+let force = mass * acc        // anonymous Formula; evaluate with force.eval(env)
 ```
 
-`FormulaTerm` carries both the `FormulaExpr` AST and the input metadata. The
-design intentionally mirrors LunarUnits conventions:
+`Formula` carries the `FormulaExpr` AST, the input metadata *and* the dimension
+of the value it computes. The design intentionally mirrors LunarUnits
+conventions:
 
 - composition uses `*` / `/` (the `Mul` / `Div` traits) and `add` / `sub`;
 - integer powers use `.pow(n)`, never `^`, matching LunarUnits quantity algebra;
-- term composition is total — combining terms only merges AST nodes and input
-  metadata, deferring dimension rejection to evaluation, exactly as LunarUnits
-  keeps quantity multiplication total.
+- composition is total — combining formulas only merges AST nodes and inputs,
+  deferring dimension rejection to evaluation, exactly as LunarUnits keeps
+  quantity multiplication total.
 
-`input` records input metadata automatically, so combining terms collects the
-`inputs` array without hand-maintaining it. `constant` and `quantity` build
-dimensionless and unit-bearing constant terms and contribute no inputs.
+`input` records a variable's name and dimension, so combining formulas collects
+the `inputs` array without hand-maintaining it. `constant` and `quantity` build
+dimensionless and unit-bearing constant factors and contribute no inputs.
 
-Two construction entry points follow the `eval` / `checked_eval` pairing:
+Just as LunarUnits propagates dimensions through `Un` and `Quantity`, each
+`Formula` synthesises its own dimension as it is composed (`mul`/`div`/`pow`
+combine dimensions; `add`/`sub` keep the left dimension and defer any mismatch
+to evaluation). `Formula::dimension()` therefore reports the output dimension
+without it ever being restated by hand.
 
-- `Formula::from_term` is total. It deduplicates inputs by name (keeping the
-  first) and never fails, so it can be used directly in top-level `let` formula
-  definitions.
-- `Formula::checked_from_term` additionally verifies that no input name appears
-  with two different dimensions, raising `FormulaBuildError` on conflict. Use it
-  when formulas are assembled dynamically rather than as static constants.
-
-`FormulaExpr` and `Formula::new` remain available, so existing code keeps
-working while domain packages migrate to the DSL.
+Predefined variables carry a fixed name. `Formula::renamed(name)` derives a
+distinct variable (same dimension, new name) from a bare variable, so the same
+physical quantity can appear several times in one formula (`m1`, `m2`). A
+same-name-different-dimension conflict is not a build error: composition stays
+total and the conflict surfaces at evaluation, where the environment binds a
+single value per name and only one dimension can match.
 
 ## Expression Boundary
 
@@ -94,20 +101,23 @@ for example by converting two temperature points into a temperature-difference
 
 ## Mechanics Package
 
-`mechanics/` is the first domain package. It exports:
+`mechanics/` is the first domain package. Mirroring how `units/mechanics`
+exports both base and derived units, it exports both the input variables and the
+formulas composed from them, all as anonymous `@common.Formula` `let` bindings:
 
-- `force_formula`: `F = m * a`
-- `work_formula`: `W = F * d`
-- `power_formula`: `P = W / t`
-- `kinetic_energy_formula`: `E_k = 1/2 * m * v^2`
-- `torque_formula`: `tau = F * r / rad`
-- `rotational_work_formula`: `W = tau * theta`
-- `formulas()`: formula catalog for enumeration
+- input variables: `mass`, `acceleration`, `velocity`, `force`, `distance`,
+  `lever_arm`, `time`, `work`, `torque`, `angle`
+- formulas: `force_formula` (`F = m * a`), `work_formula` (`W = F * d`),
+  `power_formula` (`P = W / t`), `kinetic_energy_formula` (`E_k = 1/2 m v^2`),
+  `torque_formula` (`tau = F * r / rad`), `rotational_work_formula`
+  (`W = tau * theta`)
 
-The torque formulas intentionally rely on LunarUnits' angle extension
-dimension. Torque is modeled as energy per angle (`N*m/rad`), so it is distinct
-from energy (`N*m`). Rotational work multiplies torque by angle and returns
-energy.
+Consumers can also combine the exported variables into formulas the package
+never named, such as `force * velocity` for mechanical power.
+
+The torque formulas intentionally rely on LunarUnits' angle extension dimension.
+Torque is modeled as energy per angle (`N*m/rad`), so it is distinct from energy
+(`N*m`). Rotational work multiplies torque by angle and returns energy.
 
 ## Error Boundary
 
@@ -116,15 +126,10 @@ Formula errors are local to LunarFormulas:
 - `MissingInput(name)`
 - `InputDimensionMismatch(name, expected, actual)`
 - `ExpressionDimensionMismatch(expected, actual)`
-- `OutputDimensionMismatch(expected, actual)`
 
 Lower-level LunarUnits errors are caught where necessary and re-raised as
 formula-level errors so application code can handle formula evaluation through
 one error type.
-
-Build-time conflicts surface separately through `FormulaBuildError`:
-
-- `InputDimensionConflict(name, first, second)`
 
 ## Package Layout
 
@@ -132,9 +137,7 @@ Build-time conflicts surface separately through `FormulaBuildError`:
 common/
   formula_expr.mbt
   formula.mbt
-  formula_term.mbt
   formula_test.mbt
-  formula_term_test.mbt
 mechanics/
   mechanics_formulas.mbt
   mechanics_formulas_test.mbt
