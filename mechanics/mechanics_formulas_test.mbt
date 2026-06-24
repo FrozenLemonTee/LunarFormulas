@@ -5,20 +5,37 @@ fn newton_meters_per_radian(value : Double) -> @quantity.Quantity {
 }
 
 ///|
-/// Formula metadata is available for discovery and UI generation.
-test "formula catalog exposes mechanics metadata" {
-  let fs = formulas()
-  assert_eq(fs.length(), 6)
-  assert_eq(force_formula.name(), "force")
-  assert_eq(force_formula.display(), "F = m * a")
-  assert_eq(force_formula.inputs().length(), 2)
+/// Each formula's dimension is inferred from its composition and equals the
+/// physical quantity it produces.
+test "formula dimensions are inferred correctly" {
   assert_true(
-    force_formula.output().is_same(@mechanical_units.newton.dimension()),
+    force_formula.dimension().is_same(@mechanical_units.newton.dimension()),
+  )
+  assert_true(
+    work_formula.dimension().is_same(@mechanical_units.joule.dimension()),
+  )
+  assert_true(
+    power_formula.dimension().is_same(@mechanical_units.watt.dimension()),
+  )
+  assert_true(
+    kinetic_energy_formula
+    .dimension()
+    .is_same(@mechanical_units.joule.dimension()),
+  )
+  assert_true(
+    torque_formula
+    .dimension()
+    .is_same(@mechanical_units.joule.dimension().div(@angle.radian.dimension())),
+  )
+  assert_true(
+    rotational_work_formula
+    .dimension()
+    .is_same(@mechanical_units.joule.dimension()),
   )
 }
 
 ///|
-/// Force evaluates through the formula object.
+/// Force evaluates mass times acceleration.
 test "force formula evaluates mass times acceleration" {
   let env = @common.FormulaEnv::new()
     .with_input("mass", @quantity.Quantity::new(2.0, @si.kilogram))
@@ -114,4 +131,20 @@ test "mechanics formulas reject missing inputs" {
     @qmechanics.newtons(10.0),
   )
   assert_true(work_formula.checked_eval(env) is None)
+}
+
+///|
+/// Input variables compose into custom formulas not in the catalog. Here force
+/// times velocity gives mechanical power directly.
+test "input variables compose into custom formulas" {
+  assert_true(
+    (force * velocity).dimension().is_same(@mechanical_units.watt.dimension()),
+  )
+  let env = @common.FormulaEnv::new()
+    .with_input("force", @qmechanics.newtons(10.0))
+    .with_input("velocity", @qmechanics.meters_per_second(3.0))
+  assert_eq(
+    (force * velocity).eval(env).to(@mechanical_units.watt).value(),
+    30.0,
+  )
 }

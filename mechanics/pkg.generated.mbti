@@ -6,17 +6,35 @@ import {
 }
 
 // Values
+pub let acceleration : @common.Formula
+
+pub let angle : @common.Formula
+
+pub let distance : @common.Formula
+
+pub let force : @common.Formula
+
 pub let force_formula : @common.Formula
 
-pub fn formulas() -> Array[@common.Formula]
-
 pub let kinetic_energy_formula : @common.Formula
+
+pub let lever_arm : @common.Formula
+
+pub let mass : @common.Formula
 
 pub let power_formula : @common.Formula
 
 pub let rotational_work_formula : @common.Formula
 
+pub let time : @common.Formula
+
+pub let torque : @common.Formula
+
 pub let torque_formula : @common.Formula
+
+pub let velocity : @common.Formula
+
+pub let work : @common.Formula
 
 pub let work_formula : @common.Formula
 
