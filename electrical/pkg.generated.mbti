@@ -1,0 +1,40 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "FrozenLemonTee/LunarFormulas/electrical"
+
+import {
+  "FrozenLemonTee/LunarFormulas/common",
+}
+
+// Values
+pub let charge : @common.Formula
+
+pub let current : @common.Formula
+
+pub let electric_charge : @common.Formula
+
+pub let electric_energy : @common.Formula
+
+pub let electric_power : @common.Formula
+
+pub fn formulas() -> Array[@common.Formula]
+
+pub let joule_heating_power : @common.Formula
+
+pub let ohm_voltage : @common.Formula
+
+pub let power : @common.Formula
+
+pub let resistance : @common.Formula
+
+pub let time : @common.Formula
+
+pub let voltage : @common.Formula
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

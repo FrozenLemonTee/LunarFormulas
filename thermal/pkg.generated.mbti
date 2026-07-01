@@ -1,0 +1,38 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "FrozenLemonTee/LunarFormulas/thermal"
+
+import {
+  "FrozenLemonTee/LunarFormulas/common",
+}
+
+// Values
+pub let area : @common.Formula
+
+pub let conduction_heat_rate : @common.Formula
+
+pub let convection_heat_rate : @common.Formula
+
+pub fn formulas() -> Array[@common.Formula]
+
+pub let heat_transfer_coefficient : @common.Formula
+
+pub let mass : @common.Formula
+
+pub let sensible_heat : @common.Formula
+
+pub let specific_heat : @common.Formula
+
+pub let temperature_difference : @common.Formula
+
+pub let thermal_conductivity : @common.Formula
+
+pub let thickness : @common.Formula
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

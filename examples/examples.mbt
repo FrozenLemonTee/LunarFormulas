@@ -176,3 +176,43 @@ test "an inconsistent input surfaces at evaluation" {
   let env = @common.FormulaEnv::new().with_input("x", @qgeometry.meters(2.0))
   assert_true(bad.checked_eval(env) is None)
 }
+
+///|
+/// Electrical formulas are ordinary formula values. Ohm's law can be evaluated
+/// directly and converted to volts.
+test "evaluate ohm voltage" {
+  let env = @common.FormulaEnv::new()
+    .with_input("current", @quantity.Quantity::new(2.0, @si.ampere))
+    .with_input("resistance", @qelectromagnetism.ohms(5.0))
+  let voltage = @formula_electrical.ohm_voltage.eval(env)
+  assert_eq(voltage.to(@electrical_units.volt).value(), 10.0)
+}
+
+///|
+/// Thermal formulas use linear temperature intervals. Absolute affine
+/// temperature points should be differenced before entering the expression tree.
+test "evaluate sensible heat with a temperature interval" {
+  let env = @common.FormulaEnv::new()
+    .with_input("mass", @qmass.kilograms(2.0))
+    .with_input("specific_heat", @qthermal.joules_per_kilogram_kelvin(4186.0))
+    .with_input(
+      "temperature_difference",
+      @quantity.Quantity::new(10.0, @si.kelvin),
+    )
+  let heat = @formula_thermal.sensible_heat.eval(env)
+  assert_eq(heat.to(@mechanical_units.joule).value(), 83720.0)
+}
+
+///|
+/// Catalog entries add discoverability metadata without changing the anonymous
+/// formula model. A CLI or Web UI can look up an entry, inspect its inputs, then
+/// bind quantities by name and evaluate it.
+test "evaluate through the formula catalog" {
+  let entry = @formula_catalog.all().lookup("electric-power").unwrap()
+  assert_eq(entry.display(), "P = V * I")
+  let env = @common.FormulaEnv::new()
+    .with_input("voltage", @qelectromagnetism.volts(12.0))
+    .with_input("current", @quantity.Quantity::new(2.0, @si.ampere))
+  let power = entry.eval(env)
+  assert_eq(power.to(@mechanical_units.watt).value(), 24.0)
+}

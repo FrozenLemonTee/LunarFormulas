@@ -1,0 +1,19 @@
+// Thermal formula package built on LunarUnits quantities and units.
+import {
+  "FrozenLemonTee/LunarFormulas/common",
+  "FrozenLemonTee/LunarUnits/core/dimension",
+  "FrozenLemonTee/LunarUnits/units/si",
+  "FrozenLemonTee/LunarUnits/units/thermal" @thermal_units,
+}
+
+import {
+  "FrozenLemonTee/LunarFormulas/common",
+  "FrozenLemonTee/LunarUnits/affine",
+  "FrozenLemonTee/LunarUnits/core/quantity",
+  "FrozenLemonTee/LunarUnits/quantities/qgeometry",
+  "FrozenLemonTee/LunarUnits/quantities/qmass",
+  "FrozenLemonTee/LunarUnits/quantities/qthermal",
+  "FrozenLemonTee/LunarUnits/units/mechanics" @mechanical_units,
+  "FrozenLemonTee/LunarUnits/units/si",
+  "FrozenLemonTee/LunarUnits/units/thermal" @thermal_units,
+} for "test"

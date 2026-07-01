@@ -33,6 +33,12 @@ restated by hand.
 - `mechanics` — predefined input variables (mass, acceleration, force, …) and
   the formulas composed from them (force, work, power, kinetic energy, torque,
   rotational work).
+- `electrical` — Ohm's law, electric power, Joule-heating power, charge and
+  electric energy formulas.
+- `thermal` — sensible heat, one-dimensional conduction heat rate and
+  convection heat rate formulas, using linear temperature-difference quantities.
+- `catalog` — discoverable `FormulaEntry` metadata and preset catalogs for
+  mechanics, electrical and thermal formulas.
 - Runnable examples and tests showing dimension-safe formula evaluation.
 
 ## Installation
@@ -46,11 +52,16 @@ LunarFormulas depends on LunarUnits:
 ```moonbit
 import {
   "FrozenLemonTee/LunarFormulas/common",
+  "FrozenLemonTee/LunarFormulas/catalog" @formula_catalog,
   "FrozenLemonTee/LunarFormulas/mechanics" @formula_mechanics,
+  "FrozenLemonTee/LunarFormulas/electrical" @formula_electrical,
+  "FrozenLemonTee/LunarFormulas/thermal" @formula_thermal,
   "FrozenLemonTee/LunarUnits/core/dimension",
   "FrozenLemonTee/LunarUnits/core/quantity",
   "FrozenLemonTee/LunarUnits/units/si",
   "FrozenLemonTee/LunarUnits/units/mechanics" @mechanical_units,
+  "FrozenLemonTee/LunarUnits/units/electromagnetism" @electrical_units,
+  "FrozenLemonTee/LunarUnits/quantities/qelectromagnetism",
 }
 ```
 
@@ -160,6 +171,12 @@ common/
   formula.mbt         FormulaInput and the Formula value, input/constant/quantity
 mechanics/
   mechanics_formulas.mbt   input variables and the formulas composed from them
+electrical/
+  electrical_formulas.mbt  electrical variables and formulas
+thermal/
+  thermal_formulas.mbt     thermal variables and formulas
+catalog/
+  catalog.mbt              FormulaEntry metadata and preset catalogs
 examples/
   examples.mbt        runnable cookbook examples
 docs/
@@ -174,6 +191,18 @@ Run the usual MoonBit workflow from this repository:
 moon info
 moon fmt
 moon test
+```
+
+A formula catalog can be used by applications to discover formulas and build
+forms dynamically:
+
+```moonbit
+let entry = @formula_catalog.all().lookup("ohm-voltage").unwrap()
+let env = @common.FormulaEnv::new()
+  .with_input("current", @quantity.Quantity::new(2.0, @si.ampere))
+  .with_input("resistance", @qelectromagnetism.ohms(5.0))
+let voltage = entry.eval(env)
+// voltage.to(@electrical_units.volt).value() == 10.0
 ```
 
 The workspace includes `../LunarUnits` for local development. The module

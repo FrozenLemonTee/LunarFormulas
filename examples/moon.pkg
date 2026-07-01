@@ -1,7 +1,10 @@
 // Runnable cookbook examples for LunarFormulas.
 import {
   "FrozenLemonTee/LunarFormulas/common",
+  "FrozenLemonTee/LunarFormulas/catalog" @formula_catalog,
+  "FrozenLemonTee/LunarFormulas/electrical" @formula_electrical,
   "FrozenLemonTee/LunarFormulas/mechanics" @formula_mechanics,
+  "FrozenLemonTee/LunarFormulas/thermal" @formula_thermal,
   "FrozenLemonTee/LunarUnits/core/dimension",
   "FrozenLemonTee/LunarUnits/core/quantity",
   "FrozenLemonTee/LunarUnits/units/si",
@@ -10,6 +13,10 @@ import {
   "FrozenLemonTee/LunarUnits/notation/preset",
   "FrozenLemonTee/LunarUnits/notation/parser",
   "FrozenLemonTee/LunarUnits/quantities/qangle",
+  "FrozenLemonTee/LunarUnits/quantities/qelectromagnetism",
   "FrozenLemonTee/LunarUnits/quantities/qgeometry",
+  "FrozenLemonTee/LunarUnits/quantities/qmass",
   "FrozenLemonTee/LunarUnits/quantities/qmechanics",
+  "FrozenLemonTee/LunarUnits/quantities/qthermal",
+  "FrozenLemonTee/LunarUnits/units/electromagnetism" @electrical_units,
 }

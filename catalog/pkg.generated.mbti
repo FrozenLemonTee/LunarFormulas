@@ -1,0 +1,53 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "FrozenLemonTee/LunarFormulas/catalog"
+
+import {
+  "FrozenLemonTee/LunarFormulas/common",
+  "FrozenLemonTee/LunarUnits/core/dimension",
+  "FrozenLemonTee/LunarUnits/core/quantity",
+}
+
+// Values
+pub fn all() -> Catalog
+
+pub fn electrical() -> Catalog
+
+pub fn mechanics() -> Catalog
+
+pub fn thermal() -> Catalog
+
+// Errors
+
+// Types and methods
+pub struct Catalog {
+  entries : Map[String, FormulaEntry]
+}
+pub fn Catalog::entries(Self) -> Array[FormulaEntry]
+pub fn Catalog::lookup(Self, String) -> FormulaEntry?
+pub fn Catalog::merge(Self, Self) -> Self
+pub fn Catalog::names(Self) -> Array[String]
+pub fn Catalog::new() -> Self
+pub fn Catalog::with_entry(Self, FormulaEntry) -> Self
+
+pub struct FormulaEntry {
+  name : String
+  domain : String
+  display : String
+  description : String
+  formula : @common.Formula
+}
+pub fn FormulaEntry::checked_eval(Self, @common.FormulaEnv) -> @quantity.Quantity?
+pub fn FormulaEntry::description(Self) -> String
+pub fn FormulaEntry::display(Self) -> String
+pub fn FormulaEntry::domain(Self) -> String
+pub fn FormulaEntry::eval(Self, @common.FormulaEnv) -> @quantity.Quantity raise @common.FormulaError
+pub fn FormulaEntry::formula(Self) -> @common.Formula
+pub fn FormulaEntry::inputs(Self) -> Array[@common.FormulaInput]
+pub fn FormulaEntry::name(Self) -> String
+pub fn FormulaEntry::new(String, String, String, String, @common.Formula) -> Self
+pub fn FormulaEntry::output_dimension(Self) -> @dimension.Dimension
+
+// Type aliases
+
+// Traits
+

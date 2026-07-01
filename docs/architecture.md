@@ -99,7 +99,7 @@ quantity algebra. Domain packages that need them should adapt at the boundary,
 for example by converting two temperature points into a temperature-difference
 `Quantity` before entering the generic formula model.
 
-## Mechanics Package
+## Domain Packages
 
 `mechanics/` is the first domain package. Mirroring how `units/mechanics`
 exports both base and derived units, it exports both the input variables and the
@@ -118,6 +118,29 @@ never named, such as `force * velocity` for mechanical power.
 The torque formulas intentionally rely on LunarUnits' angle extension dimension.
 Torque is modeled as energy per angle (`N*m/rad`), so it is distinct from energy
 (`N*m`). Rotational work multiplies torque by angle and returns energy.
+
+`electrical/` adds the first circuit formulas: Ohm voltage (`V = I * R`),
+electric power (`P = V * I`), Joule-heating power (`P = I^2 * R`), charge
+(`Q = I * t`) and electric energy (`E = P * t`). Its tests include the key
+application boundary: binding a current where voltage is expected is rejected
+before a result is produced.
+
+`thermal/` adds sensible heat (`Q = m * c * dT`), conduction heat rate
+(`q = k * A * dT / L`) and convection heat rate (`q = h * A * dT`). The package
+keeps the expression tree in the linear `Quantity` world: `temperature_difference`
+is a kelvin interval. Absolute affine temperature points must be adapted at the
+boundary by taking `Point::difference` first.
+
+## Catalog Package
+
+`catalog/` is the discoverability adapter layered above anonymous formulas. It
+wraps a `@common.Formula` in a `FormulaEntry` with stable `name`, `domain`,
+`display` and `description` metadata, and exposes `Catalog` lookup/enumeration
+APIs plus `mechanics()`, `electrical()`, `thermal()` and `all()` presets.
+
+This mirrors LunarUnits' notation catalog boundary: domain packages stay pure
+formula vocabularies, while CLI/Web/documentation layers use `catalog` to list
+formulas, show input requirements and evaluate selected entries.
 
 ## Error Boundary
 
@@ -141,6 +164,15 @@ common/
 mechanics/
   mechanics_formulas.mbt
   mechanics_formulas_test.mbt
+electrical/
+  electrical_formulas.mbt
+  electrical_formulas_test.mbt
+thermal/
+  thermal_formulas.mbt
+  thermal_formulas_test.mbt
+catalog/
+  catalog.mbt
+  catalog_test.mbt
 examples/
   examples.mbt
 docs/

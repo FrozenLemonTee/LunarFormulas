@@ -1,0 +1,20 @@
+// Formula catalog adapter: discoverable metadata over anonymous Formula values.
+import {
+  "FrozenLemonTee/LunarFormulas/common",
+  "FrozenLemonTee/LunarFormulas/electrical" @formula_electrical,
+  "FrozenLemonTee/LunarFormulas/mechanics" @formula_mechanics,
+  "FrozenLemonTee/LunarFormulas/thermal" @formula_thermal,
+  "FrozenLemonTee/LunarUnits/core/dimension",
+  "FrozenLemonTee/LunarUnits/core/quantity",
+}
+
+import {
+  "FrozenLemonTee/LunarFormulas/common",
+  "FrozenLemonTee/LunarFormulas/electrical" @formula_electrical,
+  "FrozenLemonTee/LunarFormulas/mechanics" @formula_mechanics,
+  "FrozenLemonTee/LunarUnits/core/quantity",
+  "FrozenLemonTee/LunarUnits/quantities/qelectromagnetism",
+  "FrozenLemonTee/LunarUnits/units/electromagnetism" @electrical_units,
+  "FrozenLemonTee/LunarUnits/units/mechanics" @mechanical_units,
+  "FrozenLemonTee/LunarUnits/units/si",
+} for "test"

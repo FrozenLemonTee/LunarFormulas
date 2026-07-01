@@ -18,6 +18,9 @@ LunarFormulas 是基于
 - `FormulaEnv`：公式求值环境，按名称绑定 LunarUnits `Quantity`。
 - `FormulaError`：结构化求值错误（缺少输入、输入量纲不匹配、表达式量纲不匹配）。
 - `mechanics`：预置输入变量（mass、acceleration、force…）与由它们组合出的公式（力、功、功率、动能、扭矩、旋转做功）。
+- `electrical`：欧姆定律、电功率、焦耳热功率、电荷和电能公式。
+- `thermal`：显热、一维导热换热率和对流换热率公式，输入使用线性温差 `Quantity`。
+- `catalog`：带 `FormulaEntry` 元数据的可发现公式目录，提供 mechanics / electrical / thermal / all 预置目录。
 - 可运行示例和测试。
 
 ## 安装
@@ -31,11 +34,16 @@ moon add FrozenLemonTee/LunarFormulas
 ```moonbit
 import {
   "FrozenLemonTee/LunarFormulas/common",
+  "FrozenLemonTee/LunarFormulas/catalog" @formula_catalog,
   "FrozenLemonTee/LunarFormulas/mechanics" @formula_mechanics,
+  "FrozenLemonTee/LunarFormulas/electrical" @formula_electrical,
+  "FrozenLemonTee/LunarFormulas/thermal" @formula_thermal,
   "FrozenLemonTee/LunarUnits/core/dimension",
   "FrozenLemonTee/LunarUnits/core/quantity",
   "FrozenLemonTee/LunarUnits/units/si",
   "FrozenLemonTee/LunarUnits/units/mechanics" @mechanical_units,
+  "FrozenLemonTee/LunarUnits/units/electromagnetism" @electrical_units,
+  "FrozenLemonTee/LunarUnits/quantities/qelectromagnetism",
 }
 ```
 
@@ -101,7 +109,18 @@ pub let force : @common.Formula = mass * acc
 - 在真实 LunarUnits 数量上求值，求值前校验输入量纲；
 - 与 LunarUnits 一致的使用风格——组合出的单位、数量本身都是一等值。
 
-> 注：本库的目标已从「让应用程序发现公式元数据」转向「更优雅、更自然的公式书写」。若仍需应用层发现公式，可在本库之上仿照 LunarUnits 的 catalog 另建带元数据的目录适配器，而不污染核心的匿名公式值。
+应用层如果需要枚举公式、生成 CLI `list/show` 或 Web 动态表单，可以使用 `catalog` 包。它把匿名公式包装为带稳定名称、领域、展示字符串和说明的 `FormulaEntry`，但不把这些元数据塞回核心 `Formula`。
+
+```moonbit
+let entry = @formula_catalog.all().lookup("ohm-voltage").unwrap()
+// entry.display() == "V = I * R"
+```
+
+## 领域与目录示例
+
+电学公式可以直接求值。例如 `ohm-voltage` 对应 `V = I * R`，把电流绑定到 `voltage` 这类错误输入会在求值前被量纲检查拦截。
+
+热学公式明确要求温差是普通 kelvin `Quantity`，不是 `affine/` 的绝对温度点。如果输入是两个温度点，应先用 `Point::difference` 得到温差再绑定到 `temperature_difference`。
 
 ## 重点示例：扭矩 vs 能量
 
