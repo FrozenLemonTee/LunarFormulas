@@ -1,11 +1,9 @@
 ///|
-/// A named formula input with an expected physical dimension.
+/// A named formula input with an expected physical unit.
 ///
-/// Like a LunarUnits `Un`, which carries only a symbol and a dimension, a
-/// formula input carries only the name used to bind it at evaluation time and
-/// the dimension it is expected to have. It deliberately holds no human-facing
-/// description: a `Formula` is an anonymous, composable value, not a documented
-/// metadata object.
+/// The unit carries both the symbol used for evaluation normalization and the
+/// physical dimension used for validation. Formula inputs remain metadata only:
+/// they hold no value and no human-facing description.
 ///
 /// # Example
 ///
@@ -18,11 +16,12 @@
 /// ```
 pub struct FormulaInput {
   name : String
-  dimension : @dimension.Dimension
+  unit : @unit.Un
 } derive(Eq, Debug)
 
 ///|
-/// Creates a formula input descriptor.
+/// Creates a formula input descriptor with a synthetic base unit for the given
+/// dimension.
 ///
 /// ```mbt check
 /// test {
@@ -36,19 +35,32 @@ pub fn FormulaInput::new(
   name : String,
   dimension : @dimension.Dimension,
 ) -> FormulaInput {
-  { name, dimension }
+  { name, unit: @unit.Un::base(name, dimension) }
+}
+
+///|
+/// Creates a formula input descriptor with an explicit expected unit.
+///
+/// ```mbt check
+/// test {
+///   let kg = @unit.Un::base("kg", @dimension.Dimension::mass())
+///   assert_true(FormulaInput::with_unit("mass", kg).unit().is_compatible(kg))
+/// }
+/// ```
+pub fn FormulaInput::with_unit(name : String, unit : @unit.Un) -> FormulaInput {
+  { name, unit }
 }
 
 ///|
 /// Returns the input name.
-///
-/// ```mbt check
-/// test {
-///   assert_eq(FormulaInput::new("t", @dimension.Dimension::time()).name(), "t")
-/// }
-/// ```
 pub fn FormulaInput::name(self : FormulaInput) -> String {
   self.name
+}
+
+///|
+/// Returns the expected input unit.
+pub fn FormulaInput::unit(self : FormulaInput) -> @unit.Un {
+  self.unit
 }
 
 ///|
@@ -61,7 +73,7 @@ pub fn FormulaInput::name(self : FormulaInput) -> String {
 /// }
 /// ```
 pub fn FormulaInput::dimension(self : FormulaInput) -> @dimension.Dimension {
-  self.dimension
+  self.unit.dimension()
 }
 
 ///|
@@ -71,14 +83,13 @@ pub fn FormulaInput::dimension(self : FormulaInput) -> @dimension.Dimension {
 /// `meter / second.pow(2)` is an anonymous unit value you can use directly, a
 /// `Formula` such as `mass * acceleration` is an anonymous value you can
 /// compose with `*`, `/`, `add`, `sub` and `.pow(n)` and then evaluate. It
-/// carries no name, display string or description — only the data needed to
+/// carries no name, display string or description, only the data needed to
 /// evaluate and to keep dimensions consistent:
 ///
 /// - `expr`: the evaluation AST;
-/// - `inputs`: the free variables it reads, each with an expected dimension;
+/// - `inputs`: the free variables it reads, each with an expected unit;
 /// - `dimension`: the dimension of the value it computes, synthesised as the
-///   formula is composed (exactly as LunarUnits propagates dimensions through
-///   `Un` and `Quantity`).
+///   formula is composed.
 ///
 /// # Example
 ///
@@ -102,10 +113,9 @@ pub struct Formula {
 ///|
 /// Creates a variable formula carrying its own input metadata.
 ///
-/// This is the DSL counterpart of `FormulaExpr::variable`: besides building a
-/// `Var` node it records the input name and expected dimension so the metadata
-/// is collected automatically when formulas are combined. It is the one place
-/// where an input name is written down, mirroring `Un::base("m", …)`.
+/// This compatibility constructor records a synthetic base unit named after the
+/// input. Use [`input_unit`] when the formula requires a concrete unit such as
+/// kilograms or metres.
 ///
 /// ```mbt check
 /// test {
@@ -115,10 +125,27 @@ pub struct Formula {
 /// }
 /// ```
 pub fn input(name : String, dimension : @dimension.Dimension) -> Formula {
+  input_unit(name, @unit.Un::base(name, dimension))
+}
+
+///|
+/// Creates a variable formula with an explicit expected unit.
+///
+/// During evaluation, compatible input quantities are converted to this unit
+/// before they enter the formula expression.
+///
+/// ```mbt check
+/// test {
+///   let kg = @unit.Un::base("kg", @dimension.Dimension::mass())
+///   let mass = input_unit("mass", kg)
+///   assert_true(mass.inputs()[0].unit().is_compatible(kg))
+/// }
+/// ```
+pub fn input_unit(name : String, unit : @unit.Un) -> Formula {
   {
     expr: FormulaExpr::variable(name),
-    inputs: [FormulaInput::new(name, dimension)],
-    dimension,
+    inputs: [FormulaInput::with_unit(name, unit)],
+    dimension: unit.dimension(),
   }
 }
 
@@ -335,8 +362,8 @@ pub fn Formula::pow(self : Formula, exponent : Int) -> Formula {
 ///
 /// Predefined variables carry a fixed name, so building a formula that uses the
 /// same physical quantity twice (for example two masses `m1` and `m2`) needs a
-/// way to derive distinct, renamed variables. This is that operation: it keeps
-/// the dimension and produces a fresh variable bound to `name`.
+/// way to derive distinct, renamed variables. This operation keeps the expected
+/// unit and produces a fresh variable bound to `name`.
 ///
 /// It is only meaningful for a bare variable formula. Applied to a composed
 /// formula it returns the receiver unchanged, since renaming a whole expression
@@ -355,18 +382,23 @@ pub fn Formula::pow(self : Formula, exponent : Int) -> Formula {
 /// ```
 pub fn Formula::renamed(self : Formula, name : String) -> Formula {
   match self.expr {
-    Var(_) => input(name, self.dimension)
+    Var(_) =>
+      if self.inputs.length() == 1 {
+        input_unit(name, self.inputs[0].unit())
+      } else {
+        input(name, self.dimension)
+      }
     _ => self
   }
 }
 
 ///|
-/// Checks that every input exists in the environment with the expected
-/// dimension.
-fn Formula::check_inputs(
+/// Returns an environment with inputs converted to their declared units.
+fn Formula::normalize_inputs(
   self : Formula,
   env : FormulaEnv,
-) -> Unit raise FormulaError {
+) -> FormulaEnv raise FormulaError {
+  let mut normalized = env
   for descriptor in self.inputs {
     match env.get(descriptor.name()) {
       None => raise MissingInput(descriptor.name())
@@ -375,18 +407,27 @@ fn Formula::check_inputs(
           raise InputDimensionMismatch(
             (descriptor.name(), descriptor.dimension(), value.dimension()),
           )
+        } else {
+          let converted = value.to(descriptor.unit()) catch {
+            @quantity.DimensionMismatch((expected, actual)) =>
+              raise InputDimensionMismatch(
+                (descriptor.name(), expected, actual),
+              )
+          }
+          normalized = normalized.with_input(descriptor.name(), converted)
         }
     }
   }
+  normalized
 }
 
 ///|
 /// Evaluates the formula against an environment.
 ///
-/// Inputs are checked by dimension before evaluation, and the expression is
-/// evaluated over LunarUnits quantities. There is no declared output dimension
-/// to verify: the result dimension simply is `self.dimension()`, synthesised
-/// while the formula was composed.
+/// Inputs are checked by dimension and converted to the formula's declared input
+/// units before expression evaluation. There is no declared output dimension to
+/// verify: the result dimension simply is `self.dimension()`, synthesised while
+/// the formula was composed.
 ///
 /// # Example
 ///
@@ -414,8 +455,8 @@ pub fn Formula::eval(
   self : Formula,
   env : FormulaEnv,
 ) -> @quantity.Quantity raise FormulaError {
-  self.check_inputs(env)
-  self.expr.eval(env)
+  let normalized = self.normalize_inputs(env)
+  self.expr.eval(normalized)
 }
 
 ///|

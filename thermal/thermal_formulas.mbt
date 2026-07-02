@@ -6,13 +6,10 @@
 ///
 /// ```mbt check
 /// test {
-///   assert_true(mass.dimension().is_same(@dimension.Dimension::mass()))
+///   assert_true(mass.dimension().is_same(@si.kilogram.dimension()))
 /// }
 /// ```
-pub let mass : @common.Formula = @common.input(
-  "mass",
-  @dimension.Dimension::mass(),
-)
+pub let mass : @common.Formula = @common.input_unit("mass", @si.kilogram)
 
 ///|
 /// Input variable: specific heat capacity, J/(kg*K).
@@ -26,9 +23,8 @@ pub let mass : @common.Formula = @common.input(
 ///   )
 /// }
 /// ```
-pub let specific_heat : @common.Formula = @common.input(
-  "specific_heat",
-  @thermal_units.joule_per_kilogram_kelvin.dimension(),
+pub let specific_heat : @common.Formula = @common.input_unit(
+  "specific_heat", @thermal_units.joule_per_kilogram_kelvin,
 )
 
 ///|
@@ -45,9 +41,8 @@ pub let specific_heat : @common.Formula = @common.input(
 ///   )
 /// }
 /// ```
-pub let temperature_difference : @common.Formula = @common.input(
-  "temperature_difference",
-  @si.kelvin.dimension(),
+pub let temperature_difference : @common.Formula = @common.input_unit(
+  "temperature_difference", @si.kelvin,
 )
 
 ///|
@@ -62,9 +57,8 @@ pub let temperature_difference : @common.Formula = @common.input(
 ///   )
 /// }
 /// ```
-pub let thermal_conductivity : @common.Formula = @common.input(
-  "thermal_conductivity",
-  @thermal_units.watt_per_meter_kelvin.dimension(),
+pub let thermal_conductivity : @common.Formula = @common.input_unit(
+  "thermal_conductivity", @thermal_units.watt_per_meter_kelvin,
 )
 
 ///|
@@ -79,9 +73,8 @@ pub let thermal_conductivity : @common.Formula = @common.input(
 ///   )
 /// }
 /// ```
-pub let heat_transfer_coefficient : @common.Formula = @common.input(
-  "heat_transfer_coefficient",
-  @thermal_units.watt_per_square_meter_kelvin.dimension(),
+pub let heat_transfer_coefficient : @common.Formula = @common.input_unit(
+  "heat_transfer_coefficient", @thermal_units.watt_per_square_meter_kelvin,
 )
 
 ///|
@@ -89,26 +82,20 @@ pub let heat_transfer_coefficient : @common.Formula = @common.input(
 ///
 /// ```mbt check
 /// test {
-///   assert_true(area.dimension().is_same(@dimension.Dimension::length().pow(2)))
+///   assert_true(area.dimension().is_same(@si.meter.pow(2).dimension()))
 /// }
 /// ```
-pub let area : @common.Formula = @common.input(
-  "area",
-  @dimension.Dimension::length().pow(2),
-)
+pub let area : @common.Formula = @common.input_unit("area", @si.meter.pow(2))
 
 ///|
 /// Input variable: thickness / conduction path length.
 ///
 /// ```mbt check
 /// test {
-///   assert_true(thickness.dimension().is_same(@dimension.Dimension::length()))
+///   assert_true(thickness.dimension().is_same(@si.meter.dimension()))
 /// }
 /// ```
-pub let thickness : @common.Formula = @common.input(
-  "thickness",
-  @dimension.Dimension::length(),
-)
+pub let thickness : @common.Formula = @common.input_unit("thickness", @si.meter)
 
 ///|
 /// Sensible heat, `Q = m * c * dT`.

@@ -1,9 +1,9 @@
 // Electrical formula package built on LunarUnits quantities and units.
 import {
   "FrozenLemonTee/LunarFormulas/common",
-  "FrozenLemonTee/LunarUnits/core/dimension",
   "FrozenLemonTee/LunarUnits/units/electromagnetism" @electrical_units,
   "FrozenLemonTee/LunarUnits/units/mechanics" @mechanical_units,
+  "FrozenLemonTee/LunarUnits/units/si",
 }
 
 import {

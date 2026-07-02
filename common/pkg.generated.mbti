@@ -13,6 +13,8 @@ pub fn constant(Double) -> Formula
 
 pub fn input(String, @dimension.Dimension) -> Formula
 
+pub fn input_unit(String, @unit.Un) -> Formula
+
 pub fn quantity(Double, @unit.Un) -> Formula
 
 // Errors
@@ -70,11 +72,13 @@ pub fn FormulaExpr::variable(String) -> Self
 
 pub struct FormulaInput {
   name : String
-  dimension : @dimension.Dimension
+  unit : @unit.Un
 } derive(Eq, @debug.Debug)
 pub fn FormulaInput::dimension(Self) -> @dimension.Dimension
 pub fn FormulaInput::name(Self) -> String
 pub fn FormulaInput::new(String, @dimension.Dimension) -> Self
+pub fn FormulaInput::unit(Self) -> @unit.Un
+pub fn FormulaInput::with_unit(String, @unit.Un) -> Self
 
 // Type aliases
 

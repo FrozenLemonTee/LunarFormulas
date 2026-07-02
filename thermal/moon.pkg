@@ -1,7 +1,6 @@
 // Thermal formula package built on LunarUnits quantities and units.
 import {
   "FrozenLemonTee/LunarFormulas/common",
-  "FrozenLemonTee/LunarUnits/core/dimension",
   "FrozenLemonTee/LunarUnits/units/si",
   "FrozenLemonTee/LunarUnits/units/thermal" @thermal_units,
 }

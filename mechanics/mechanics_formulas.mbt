@@ -6,41 +6,14 @@
 // their only name — exactly as `@mechanics.newton` names a unit.
 
 ///|
-/// The acceleration dimension, length / time^2.
-fn acceleration_dimension() -> @dimension.Dimension {
-  @dimension.Dimension::length().div(@dimension.Dimension::time().pow(2))
-}
-
-///|
-/// The force dimension, mass * length / time^2.
-fn force_dimension() -> @dimension.Dimension {
-  @mechanical_units.newton.dimension()
-}
-
-///|
-/// The energy dimension, mass * length^2 / time^2.
-fn energy_dimension() -> @dimension.Dimension {
-  @mechanical_units.joule.dimension()
-}
-
-///|
-/// The torque dimension used by LunarUnits: energy / angle.
-fn torque_dimension() -> @dimension.Dimension {
-  @mechanical_units.joule.dimension().div(@angle.radian.dimension())
-}
-
-///|
 /// Input variable: a mass.
 ///
 /// ```mbt check
 /// test {
-///   assert_true(mass.dimension().is_same(@dimension.Dimension::mass()))
+///   assert_true(mass.dimension().is_same(@si.kilogram.dimension()))
 /// }
 /// ```
-pub let mass : @common.Formula = @common.input(
-  "mass",
-  @dimension.Dimension::mass(),
-)
+pub let mass : @common.Formula = @common.input_unit("mass", @si.kilogram)
 
 ///|
 /// Input variable: an acceleration (length / time^2).
@@ -50,15 +23,13 @@ pub let mass : @common.Formula = @common.input(
 ///   assert_true(
 ///     acceleration
 ///     .dimension()
-///     .is_same(
-///       @dimension.Dimension::length().div(@dimension.Dimension::time().pow(2)),
-///     ),
+///     .is_same((@si.meter / @si.second.pow(2)).dimension()),
 ///   )
 /// }
 /// ```
-pub let acceleration : @common.Formula = @common.input(
+pub let acceleration : @common.Formula = @common.input_unit(
   "acceleration",
-  acceleration_dimension(),
+  @si.meter / @si.second.pow(2),
 )
 
 ///|
@@ -71,9 +42,8 @@ pub let acceleration : @common.Formula = @common.input(
 ///   )
 /// }
 /// ```
-pub let velocity : @common.Formula = @common.input(
-  "velocity",
-  @mechanical_units.meter_per_second.dimension(),
+pub let velocity : @common.Formula = @common.input_unit(
+  "velocity", @mechanical_units.meter_per_second,
 )
 
 ///|
@@ -84,46 +54,39 @@ pub let velocity : @common.Formula = @common.input(
 ///   assert_true(force.dimension().is_same(@mechanical_units.newton.dimension()))
 /// }
 /// ```
-pub let force : @common.Formula = @common.input("force", force_dimension())
+pub let force : @common.Formula = @common.input_unit(
+  "force", @mechanical_units.newton,
+)
 
 ///|
 /// Input variable: a distance / displacement.
 ///
 /// ```mbt check
 /// test {
-///   assert_true(distance.dimension().is_same(@dimension.Dimension::length()))
+///   assert_true(distance.dimension().is_same(@si.meter.dimension()))
 /// }
 /// ```
-pub let distance : @common.Formula = @common.input(
-  "distance",
-  @dimension.Dimension::length(),
-)
+pub let distance : @common.Formula = @common.input_unit("distance", @si.meter)
 
 ///|
 /// Input variable: a lever arm length.
 ///
 /// ```mbt check
 /// test {
-///   assert_true(lever_arm.dimension().is_same(@dimension.Dimension::length()))
+///   assert_true(lever_arm.dimension().is_same(@si.meter.dimension()))
 /// }
 /// ```
-pub let lever_arm : @common.Formula = @common.input(
-  "lever_arm",
-  @dimension.Dimension::length(),
-)
+pub let lever_arm : @common.Formula = @common.input_unit("lever_arm", @si.meter)
 
 ///|
 /// Input variable: an elapsed time.
 ///
 /// ```mbt check
 /// test {
-///   assert_true(time.dimension().is_same(@dimension.Dimension::time()))
+///   assert_true(time.dimension().is_same(@si.second.dimension()))
 /// }
 /// ```
-pub let time : @common.Formula = @common.input(
-  "time",
-  @dimension.Dimension::time(),
-)
+pub let time : @common.Formula = @common.input_unit("time", @si.second)
 
 ///|
 /// Input variable: a work or energy quantity.
@@ -133,7 +96,9 @@ pub let time : @common.Formula = @common.input(
 ///   assert_true(work.dimension().is_same(@mechanical_units.joule.dimension()))
 /// }
 /// ```
-pub let work : @common.Formula = @common.input("work", energy_dimension())
+pub let work : @common.Formula = @common.input_unit(
+  "work", @mechanical_units.joule,
+)
 
 ///|
 /// Input variable: a torque (energy / angle).
@@ -147,7 +112,10 @@ pub let work : @common.Formula = @common.input("work", energy_dimension())
 ///   )
 /// }
 /// ```
-pub let torque : @common.Formula = @common.input("torque", torque_dimension())
+pub let torque : @common.Formula = @common.input_unit(
+  "torque",
+  @mechanical_units.joule / @angle.radian,
+)
 
 ///|
 /// Input variable: a rotation angle.
@@ -157,10 +125,7 @@ pub let torque : @common.Formula = @common.input("torque", torque_dimension())
 ///   assert_true(angle.dimension().is_same(@angle.radian.dimension()))
 /// }
 /// ```
-pub let angle : @common.Formula = @common.input(
-  "angle",
-  @angle.radian.dimension(),
-)
+pub let angle : @common.Formula = @common.input_unit("angle", @angle.radian)
 
 ///|
 /// Newton's second law, `F = m * a`. The output dimension (force) is inferred

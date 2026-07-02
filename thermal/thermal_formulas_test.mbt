@@ -83,3 +83,18 @@ test "affine temperature points produce interval before entering formula" {
   let heat = sensible_heat.eval(env).to(@mechanical_units.joule)
   assert_eq(heat.value(), 60000.0)
 }
+
+///|
+test "sensible heat normalizes compatible mass units" {
+  let heat = sensible_heat.eval(
+    @common.FormulaEnv::new()
+    .with_input("mass", @qmass.grams(2.0))
+    .with_input("specific_heat", @qthermal.joules_per_kilogram_kelvin(4186.0))
+    .with_input(
+      "temperature_difference",
+      @quantity.Quantity::new(10.0, @si.kelvin),
+    ),
+  )
+  assert_eq(heat.value(), 83.72)
+  assert_true(heat.unit().is_compatible(@mechanical_units.joule))
+}

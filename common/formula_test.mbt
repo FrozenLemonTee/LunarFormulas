@@ -218,3 +218,19 @@ test "renamed derives distinct variables for multi-instance use" {
   let composed = mass * mass.renamed("m2")
   assert_true(composed.renamed("whatever").expr() == composed.expr())
 }
+
+///|
+test "eval normalizes input quantities to declared units" {
+  let gram = @unit.Un::scaled("g", @dimension.Dimension::mass(), 0.001)
+  let mass = input_unit(
+    "mass",
+    @unit.Un::base("kg", @dimension.Dimension::mass()),
+  )
+  let env = FormulaEnv::new().with_input(
+    "mass",
+    @quantity.Quantity::new(2.0, gram),
+  )
+  let result = mass.eval(env)
+  assert_eq(result.value(), 0.002)
+  assert_eq(result.unit().scale(), 1.0)
+}

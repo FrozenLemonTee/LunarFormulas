@@ -9,9 +9,8 @@
 ///   assert_true(voltage.dimension().is_same(@electrical_units.volt.dimension()))
 /// }
 /// ```
-pub let voltage : @common.Formula = @common.input(
-  "voltage",
-  @electrical_units.volt.dimension(),
+pub let voltage : @common.Formula = @common.input_unit(
+  "voltage", @electrical_units.volt,
 )
 
 ///|
@@ -19,15 +18,10 @@ pub let voltage : @common.Formula = @common.input(
 ///
 /// ```mbt check
 /// test {
-///   assert_true(
-///     current.dimension().is_same(@dimension.Dimension::electric_current()),
-///   )
+///   assert_true(current.dimension().is_same(@si.ampere.dimension()))
 /// }
 /// ```
-pub let current : @common.Formula = @common.input(
-  "current",
-  @dimension.Dimension::electric_current(),
-)
+pub let current : @common.Formula = @common.input_unit("current", @si.ampere)
 
 ///|
 /// Input variable: electric resistance.
@@ -37,9 +31,8 @@ pub let current : @common.Formula = @common.input(
 ///   assert_true(resistance.dimension().is_same(@electrical_units.ohm.dimension()))
 /// }
 /// ```
-pub let resistance : @common.Formula = @common.input(
-  "resistance",
-  @electrical_units.ohm.dimension(),
+pub let resistance : @common.Formula = @common.input_unit(
+  "resistance", @electrical_units.ohm,
 )
 
 ///|
@@ -50,9 +43,8 @@ pub let resistance : @common.Formula = @common.input(
 ///   assert_true(charge.dimension().is_same(@electrical_units.coulomb.dimension()))
 /// }
 /// ```
-pub let charge : @common.Formula = @common.input(
-  "charge",
-  @electrical_units.coulomb.dimension(),
+pub let charge : @common.Formula = @common.input_unit(
+  "charge", @electrical_units.coulomb,
 )
 
 ///|
@@ -63,9 +55,8 @@ pub let charge : @common.Formula = @common.input(
 ///   assert_true(power.dimension().is_same(@mechanical_units.watt.dimension()))
 /// }
 /// ```
-pub let power : @common.Formula = @common.input(
-  "power",
-  @mechanical_units.watt.dimension(),
+pub let power : @common.Formula = @common.input_unit(
+  "power", @mechanical_units.watt,
 )
 
 ///|
@@ -73,13 +64,10 @@ pub let power : @common.Formula = @common.input(
 ///
 /// ```mbt check
 /// test {
-///   assert_true(time.dimension().is_same(@dimension.Dimension::time()))
+///   assert_true(time.dimension().is_same(@si.second.dimension()))
 /// }
 /// ```
-pub let time : @common.Formula = @common.input(
-  "time",
-  @dimension.Dimension::time(),
-)
+pub let time : @common.Formula = @common.input_unit("time", @si.second)
 
 ///|
 /// Ohm's law solved for voltage, `V = I * R`.
